@@ -1,0 +1,160 @@
+@model CallPatternAnalyzer.Models.UploadResultsViewModel
+@{
+    ViewData["Title"] = "Upload CSV";
+}
+
+<h1>Upload CSV</h1>
+
+<form method="post" enctype="multipart/form-data">
+    <div>
+        <label for="csvFile">Choose CSV file</label>
+        <input type="file" id="csvFile" name="csvFile" accept=".csv" />
+    </div>
+
+    <button type="submit">Upload</button>
+</form>
+
+@if (ViewBag.Message != null)
+{
+    <p>@ViewBag.Message</p>
+}
+
+@if (Model != null && Model.Records.Any())
+{
+
+    <h2>Summary</h2>
+
+    <p>Total records: @Model.TotalRecords</p>
+    <p>Average call minutes: @Model.AverageCallMinutes.ToString("0.00")</p>
+
+    <h3>Calls By Time Of Day</h3>
+    <ul>
+        @foreach (var item in Model.CallsByTimeOfDay)
+        {
+            <li>@item.Key: @item.Value</li>
+        }
+    </ul>
+
+    <h3>Calls By Status</h3>
+    <ul>
+        @foreach (var item in Model.CallsByStatus)
+        {
+            <li>@item.Key: @item.Value</li>
+        }
+    </ul>
+
+    <h3>Top People By Call Count</h3>
+    <ul>
+        @foreach (var item in Model.TopPeopleByCallCount)
+        {
+            <li>@item.Key: @item.Value</li>
+        }
+    </ul>
+
+
+
+    <h2>ML.NET Cluster Summary</h2>
+
+    @if (Model.ClusterSummaries.Any())
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Cluster</th>
+                    <th>Records</th>
+                    <th>Avg Minutes</th>
+                    <th>Avg Hour</th>
+                    <th>Common Status</th>
+                    <th>Common Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cluster in Model.ClusterSummaries)
+                {
+                    <tr>
+                        <td>@cluster.ClusterId</td>
+                        <td>@cluster.RecordCount</td>
+                        <td>@cluster.AverageCallMinutes.ToString("0.00")</td>
+                        <td>@cluster.AverageHourOfDay.ToString("0.00")</td>
+                        <td>@cluster.MostCommonStatus</td>
+                        <td>@cluster.MostCommonTimeOfDay</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>No cluster results were created.</p>
+    }
+
+
+    <h2>Relationship: Call Length By Time Of Day</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Time Of Day</th>
+                <th>Average Call Minutes</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.AverageMinutesByTimeOfDay)
+            {
+                <tr>
+                    <td>@item.Key</td>
+                    <td>@item.Value.ToString("0.00")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2>Relationship: Call Length By Status</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Average Call Minutes</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.AverageMinutesByStatus)
+            {
+                <tr>
+                    <td>@item.Key</td>
+                    <td>@item.Value.ToString("0.00")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+
+    <h2>Preview</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Call Minutes</th>
+                <th>Created On</th>
+                <th>Hour</th>
+                <th>Time Of Day</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var record in Model.Records.Take(25))
+            {
+                <tr>
+                    <td>@record.Name</td>
+                    <td>@record.StatusName</td>
+                    <td>@(record.CallMinutes?.ToString() ?? "N/A")</td>
+                    <td>@record.CreatedOn?.ToString("g")</td>
+                    <td>@record.HourOfDay</td>
+                    <td>@record.TimeOfDayBucket</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
