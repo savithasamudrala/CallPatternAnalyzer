@@ -2,16 +2,20 @@ using CallPatternAnalyzer.Models;
 using CallPatternAnalyzer.Services;
 using CsvHelper;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 
 namespace CallPatternAnalyzer.Controllers;
 
 public class HomeController : Controller
 {
+    private readonly IConfiguration _configuration;
+
+    public HomeController(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+
     public IActionResult Index()
     {
         return View();
@@ -139,7 +143,7 @@ public class HomeController : Controller
             KeyInsights = results.KeyInsights
         };
 
-        var cosmosService = new CosmosAnalysisResultService();
+        var cosmosService = new CosmosAnalysisResultService(_configuration);
         await cosmosService.SaveAnalysisResultAsync(analysisDocument);
 
         ViewBag.SavedToCosmos = true;

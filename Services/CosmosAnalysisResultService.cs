@@ -1,24 +1,35 @@
 using CallPatternAnalyzer.Models;
 using Microsoft.Azure.Cosmos;
+using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace CallPatternAnalyzer.Services;
 
 public class CosmosAnalysisResultService
 {
-    private const string ConnectionString =
-        "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==;";
+    private readonly Microsoft.Azure.Cosmos.Container _container;
 
-    private const string DatabaseName = "CallPatternAnalyzerDb";
+    public CosmosAnalysisResultService(IConfiguration configuration)
+    {
+        var connectionString = configuration["CosmosDb:ConnectionString"];
+        var databaseName = configuration["CosmosDb:DatabaseName"];
+        var containerName = configuration["CosmosDb:ContainerName"];
 
-    private const string ContainerName = "AnalysisResults";
+        if (string.IsNullOrWhiteSpace(connectionString) ||
+            string.IsNullOrWhiteSpace(databaseName) ||
+            string.IsNullOrWhiteSpace(containerName))
+        {
+            throw new InvalidOperationException("Cosmos DB configuration is missing.");
+        }
+
+        var client = new CosmosClient(connectionString);
+
+        _container = client.GetContainer(databaseName, containerName);
+    }
 
     public async Task SaveAnalysisResultAsync(AnalysisResultDocument document)
     {
-        using var client = new CosmosClient(ConnectionString);
-
-        var container = client.GetContainer(DatabaseName, ContainerName);
-
-        await container.CreateItemAsync(document, new PartitionKey(document.Id));
+        await _container.CreateItemAsync(document, new PartitionKey(document.Id));
     }
 }
