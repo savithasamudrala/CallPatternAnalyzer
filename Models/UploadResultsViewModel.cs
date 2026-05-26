@@ -21,5 +21,7 @@ namespace CallPatternAnalyzer.Models
         public Dictionary<string, double> AverageMinutesByTimeOfDay { get; set; } = new();
 
         public Dictionary<string, double> AverageMinutesByStatus { get; set; } = new();
+
+        public List<string> KeyInsights { get; set; } = new();
     }
 }

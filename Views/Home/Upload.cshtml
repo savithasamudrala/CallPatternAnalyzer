@@ -3,6 +3,18 @@
     ViewData["Title"] = "Upload CSV";
 }
 
+@functions {
+    public string PercentWidth(double value, double max)
+    {
+        if (max <= 0)
+        {
+            return "0%";
+        }
+
+        return $"{(value * 100 / max):0.##}%";
+    }
+}
+
 <h1>Upload CSV</h1>
 
 <form method="post" enctype="multipart/form-data">
@@ -21,6 +33,47 @@
 
 @if (Model != null && Model.Records.Any())
 {
+   
+    <section class="insight-panel">
+        <h2>Key Insights</h2>
+
+        <ul>
+            @foreach (var insight in Model.KeyInsights)
+            {
+                <li>@insight</li>
+            }
+        </ul>
+    </section>
+
+
+    var busiestTimeLabel = Model.CallsByTimeOfDay
+    .OrderByDescending(item => item.Value)
+    .First()
+    .Key;
+
+
+    <section class="stat-grid">
+    <div class="stat-card">
+        <span>Total Records</span>
+        <strong>@Model.TotalRecords.ToString("N0")</strong>
+    </div>
+
+    <div class="stat-card">
+        <span>Average Call Minutes</span>
+        <strong>@Model.AverageCallMinutes.ToString("0.00")</strong>
+    </div>
+
+    <div class="stat-card">
+        <span>Busiest Time</span>
+        <strong>@busiestTimeLabel</strong>
+    </div>
+
+    <div class="stat-card">
+        <span>ML Clusters</span>
+        <strong>@Model.ClusterSummaries.Count</strong>
+    </div>
+    </section>
+
 
     <h2>Summary</h2>
 
@@ -28,12 +81,23 @@
     <p>Average call minutes: @Model.AverageCallMinutes.ToString("0.00")</p>
 
     <h3>Calls By Time Of Day</h3>
-    <ul>
+
+    var maxTimeCount = Model.CallsByTimeOfDay.Any()
+    ? Model.CallsByTimeOfDay.Max(item => item.Value)
+    : 0;
+
+    <div class="metric-bars">
         @foreach (var item in Model.CallsByTimeOfDay)
         {
-            <li>@item.Key: @item.Value</li>
+            <div class="metric-row">
+                <span class="metric-label">@item.Key</span>
+                <div class="metric-track">
+                    <div class="metric-fill" style="width: @PercentWidth(item.Value, maxTimeCount)"></div>
+                </div>
+                <strong>@item.Value</strong>
+            </div>
         }
-    </ul>
+    </div>
 
     <h3>Calls By Status</h3>
     <ul>
@@ -43,7 +107,7 @@
         }
     </ul>
 
-    <h3>Top People By Call Count</h3>
+    <h3>Top Staff Members By Call Count</h3>
     <ul>
         @foreach (var item in Model.TopPeopleByCallCount)
         {
@@ -87,6 +151,26 @@
     {
         <p>No cluster results were created.</p>
     }
+
+    var maxClusterCount = Model.ClusterSummaries.Any()
+    ? Model.ClusterSummaries.Max(cluster => cluster.RecordCount)
+    : 0;
+
+
+    <h3>Cluster Size Comparison</h3>
+
+    <div class="metric-bars">
+        @foreach (var cluster in Model.ClusterSummaries)
+        {
+            <div class="metric-row">
+                <span class="metric-label">Cluster @cluster.ClusterId</span>
+                <div class="metric-track">
+                    <div class="metric-fill metric-fill-alt" style="width: @PercentWidth(cluster.RecordCount, maxClusterCount)"></div>
+                </div>
+                <strong>@cluster.RecordCount</strong>
+            </div>
+        }
+    </div>
 
 
     <h2>Relationship: Call Length By Time Of Day</h2>
@@ -135,7 +219,7 @@
     <table>
         <thead>
             <tr>
-                <th>Name</th>
+                <th>Staff Member</th>
                 <th>Status</th>
                 <th>Call Minutes</th>
                 <th>Created On</th>

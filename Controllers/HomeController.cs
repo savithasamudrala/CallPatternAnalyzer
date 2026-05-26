@@ -1,11 +1,12 @@
-using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using CallPatternAnalyzer.Models;
-using CsvHelper;
-using System.Globalization;
-using System.ComponentModel.Design;
-using System.IO;
 using CallPatternAnalyzer.Services;
+using CsvHelper;
+using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.ComponentModel.Design;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 
 namespace CallPatternAnalyzer.Controllers;
 
@@ -59,12 +60,44 @@ public class HomeController : Controller
         var clusteringService = new CallClusteringService();
         var clusterSummaries = clusteringService.CreateClusters(records);
 
+        var busiestTimeOfDay = records
+            .GroupBy(record => record.TimeOfDayBucket)
+            .OrderByDescending(group => group.Count())
+            .First();
+
+        var longestTimeOfDay = records
+            .GroupBy(record => record.TimeOfDayBucket)
+            .OrderByDescending(group => group.Average(record => (double)(record.CallMinutes ?? 0)))
+            .First();
+
+        var longestStatus = records
+            .GroupBy(record => record.StatusName)
+            .OrderByDescending(group => group.Average(record => (double)(record.CallMinutes ?? 0)))
+            .First();
+
+        var largestCluster = clusterSummaries
+            .OrderByDescending(cluster => cluster.RecordCount)
+            .FirstOrDefault();
+
+        var keyInsights = new List<string>
+        {
+            $"{busiestTimeOfDay.Key} has the highest call volume with {busiestTimeOfDay.Count()} records.",
+            $"{longestTimeOfDay.Key} has the highest average call duration at {longestTimeOfDay.Average(record => (double)(record.CallMinutes ?? 0)):0.00} minutes.",
+            $"{longestStatus.Key} has the highest average call duration by status at {longestStatus.Average(record => (double)(record.CallMinutes ?? 0)):0.00} minutes."
+        };
+
+        if (largestCluster != null)
+        {
+            keyInsights.Add($"The largest ML.NET cluster contains {largestCluster.RecordCount} records with an average duration of {largestCluster.AverageCallMinutes:0.00} minutes.");
+        }
+
 
         var results = new UploadResultsViewModel
         {
             Records = records,
             TotalRecords = records.Count,
             AverageCallMinutes = records.Average(record => record.CallMinutes ?? 0),
+            KeyInsights = keyInsights,
             CallsByTimeOfDay = records
                     .GroupBy(record => record.TimeOfDayBucket)
                     .OrderBy(group => group.Key)
