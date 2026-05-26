@@ -31,6 +31,14 @@
     <p>@ViewBag.Message</p>
 }
 
+@if (ViewBag.SavedToCosmos == true)
+{
+    <p class="save-message">
+        Analysis result saved to Cosmos DB. Document ID: @ViewBag.CosmosDocumentId
+    </p>
+}
+
+
 @if (Model != null && Model.Records.Any())
 {
    

@@ -126,6 +126,25 @@ public class HomeController : Controller
                     group => group.Average(record => (double)(record.CallMinutes ?? 0))),
         };
 
+        var analysisDocument = new AnalysisResultDocument
+        {
+            FileName = csvFile.FileName,
+            TotalRecords = results.TotalRecords,
+            AverageCallMinutes = results.AverageCallMinutes,
+            CallsByTimeOfDay = results.CallsByTimeOfDay,
+            CallsByStatus = results.CallsByStatus,
+            AverageMinutesByTimeOfDay = results.AverageMinutesByTimeOfDay,
+            AverageMinutesByStatus = results.AverageMinutesByStatus,
+            ClusterSummaries = results.ClusterSummaries,
+            KeyInsights = results.KeyInsights
+        };
+
+        var cosmosService = new CosmosAnalysisResultService();
+        await cosmosService.SaveAnalysisResultAsync(analysisDocument);
+
+        ViewBag.SavedToCosmos = true;
+        ViewBag.CosmosDocumentId = analysisDocument.Id;
+
         return View(results);
     }
 
