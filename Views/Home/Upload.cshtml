@@ -31,12 +31,23 @@
     <p>@ViewBag.Message</p>
 }
 
+@if (ViewBag.ErrorMessage != null)
+{
+    <p class="error-message">@ViewBag.ErrorMessage</p>
+}
+
+@if (ViewBag.SaveWarning != null)
+{
+    <p class="warning-message">@ViewBag.SaveWarning</p>
+}
+
 @if (ViewBag.SavedToCosmos == true)
 {
     <p class="save-message">
         Analysis result saved to Cosmos DB. Document ID: @ViewBag.CosmosDocumentId
     </p>
 }
+
 
 
 @if (Model != null && Model.Records.Any())

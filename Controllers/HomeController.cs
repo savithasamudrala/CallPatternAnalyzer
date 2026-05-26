@@ -1,9 +1,15 @@
 using CallPatternAnalyzer.Models;
 using CallPatternAnalyzer.Services;
 using CsvHelper;
+using CsvHelper.TypeConversion;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Cosmos;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 
 namespace CallPatternAnalyzer.Controllers;
 
@@ -46,16 +52,44 @@ public class HomeController : Controller
             return View();
         }
 
-        using var reader = new StreamReader(csvFile.OpenReadStream());
-        using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
 
-        var records = csv.GetRecords<CallRecord>()
-            .Where(record =>
-                !string.IsNullOrWhiteSpace(record.Name) &&
-                !string.IsNullOrWhiteSpace(record.StatusName) &&
-                record.CallMinutes != null &&
-                record.CreatedOn != null)
-            .ToList();
+        List<CallRecord> records;
+
+        try
+        {
+            using var reader = new StreamReader(csvFile.OpenReadStream());
+            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+            records = csv.GetRecords<CallRecord>()
+                .Where(record =>
+                    !string.IsNullOrWhiteSpace(record.Name) &&
+                    !string.IsNullOrWhiteSpace(record.StatusName) &&
+                    record.CallMinutes != null &&
+                    record.CreatedOn != null)
+                .ToList();
+        }
+        catch (HeaderValidationException)
+        {
+            ViewBag.ErrorMessage = "The CSV file is missing one or more required columns: Name, StatusName, CallMinutes, CreatedOn.";
+            return View();
+        }
+        catch (TypeConverterException)
+        {
+            ViewBag.ErrorMessage = "The CSV file contains invalid values. Please check that CallMinutes is numeric and CreatedOn is a valid date.";
+            return View();
+        }
+        catch (CsvHelperException)
+        {
+            ViewBag.ErrorMessage = "The CSV file could not be read. Please confirm it is a valid CSV file.";
+            return View();
+        }
+
+
+        if (!records.Any())
+        {
+            ViewBag.ErrorMessage = "No valid records were found in the uploaded CSV.";
+            return View();
+        }
 
 
         ViewBag.Message = $"Uploaded {csvFile.FileName}. Found {records.Count} rows.";
@@ -143,11 +177,22 @@ public class HomeController : Controller
             KeyInsights = results.KeyInsights
         };
 
-        var cosmosService = new CosmosAnalysisResultService(_configuration);
-        await cosmosService.SaveAnalysisResultAsync(analysisDocument);
+        try
+        {
+            var cosmosService = new CosmosAnalysisResultService(_configuration);
+            await cosmosService.SaveAnalysisResultAsync(analysisDocument);
 
-        ViewBag.SavedToCosmos = true;
-        ViewBag.CosmosDocumentId = analysisDocument.Id;
+            ViewBag.SavedToCosmos = true;
+            ViewBag.CosmosDocumentId = analysisDocument.Id;
+        }
+        catch (CosmosException)
+        {
+            ViewBag.SaveWarning = "The analysis completed, but the result could not be saved to Cosmos DB.";
+        }
+        catch (InvalidOperationException)
+        {
+            ViewBag.SaveWarning = "The analysis completed, but Cosmos DB configuration is missing.";
+        }
 
         return View(results);
     }
