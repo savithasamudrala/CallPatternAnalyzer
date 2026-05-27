@@ -21,6 +21,44 @@ body {
   margin-bottom: 60px;
 }
 
+table {
+    width: 100%;
+    margin: 1rem 0 2rem;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+th,
+td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #d7dee8;
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    background: #f8fafc;
+    color: #334155;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+td {
+    color: #1f2937;
+}
+
+tbody tr:hover {
+    background: #f8fafc;
+}
+
+@media (max-width: 900px) {
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
